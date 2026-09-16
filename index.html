@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Short-Term Rental Transaction Tracker</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{
+    --ink:#23282A;
+    --ink-soft:#4B5350;
+    --paper:#F7F3E9;
+    --paper-2:#FBF9F3;
+    --sand:#E7DBB8;
+    --sand-deep:#D8C89A;
+    --sage:#79906D;
+    --sage-deep:#5C7352;
+    --sage-pale:#DCE5D3;
+    --charcoal:#262C2E;
+    --charcoal-2:#333B3D;
+    --line:rgba(38,44,46,0.14);
+    --line-soft:rgba(38,44,46,0.08);
+    --radius-card: 4px;
+  }
+  :root:not([data-theme="light"]){
+    @media (prefers-color-scheme: dark){
+      --ink:#EDEAE0;
+      --ink-soft:#B9C0BA;
+      --paper:#1B1F20;
+      --paper-2:#20262A;
+      --sand:#3A3628;
+      --sand-deep:#4A4432;
+      --sage:#8FA982;
+      --sage-deep:#A9C29B;
+      --sage-pale:#2B332B;
+      --charcoal:#0F1213;
+      --charcoal-2:#171B1C;
+      --line:rgba(237,234,224,0.14);
+      --line-soft:rgba(237,234,224,0.08);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#EDEAE0;
+    --ink-soft:#B9C0BA;
+    --paper:#1B1F20;
+    --paper-2:#20262A;
+    --sand:#3A3628;
+    --sand-deep:#4A4432;
+    --sage:#8FA982;
+    --sage-deep:#A9C29B;
+    --sage-pale:#2B332B;
+    --charcoal:#0F1213;
+    --charcoal-2:#171B1C;
+    --line:rgba(237,234,224,0.14);
+    --line-soft:rgba(237,234,224,0.08);
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family: ui-sans-serif, "Segoe UI", -apple-system, system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    transition: background .25s ease, color .25s ease;
+  }
+  .serif{ font-family: "Iowan Old Style","Palatino Linotype","URW Palladio L", Georgia, serif; }
+  .figure{ font-variant-numeric: tabular-nums; font-feature-settings:"tnum" 1; }
+  .wrap{ max-width:1100px; margin:0 auto; padding-left:24px; padding-right:24px; }
+  .ledger-row{ border-top:1px solid var(--line); }
+  .ledger-row:last-child{ border-bottom:1px solid var(--line); }
+  .hairline{ border-color:var(--line) !important; }
+  .hairline-soft{ border-color:var(--line-soft) !important; }
+
+  a, button{ -webkit-tap-highlight-color:transparent; }
+  a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visible{
+    outline:2px solid var(--sage-deep);
+    outline-offset:3px;
+  }
+
+  .btn-buy{
+    background:var(--sage-deep);
+    color:#FBF9F3;
+    font-weight:600;
+    letter-spacing:.01em;
+    transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.08);
+  }
+  .btn-buy:hover{ background:var(--sage); transform:translateY(-1px); }
+  .btn-buy:active{ transform:translateY(0); }
+
+  .theme-toggle{
+    width:38px; height:38px;
+    border:1px solid var(--line);
+    border-radius:999px;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--paper-2);
+    cursor:pointer;
+  }
+  .theme-toggle svg{ width:17px; height:17px; }
+
+  /* hero dashboard mock */
+  .dash-card{
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    border-radius: var(--radius-card);
+  }
+  .dash-cell{
+    border:1px solid var(--line-soft);
+  }
+  .swatch{ width:11px; height:11px; border-radius:2px; display:inline-block; }
+
+  .bar-rise{ transform-origin:bottom; animation: rise .9s cubic-bezier(.2,.7,.25,1) both; }
+  @keyframes rise{ from{ transform:scaleY(0);} to{ transform:scaleY(1);} }
+  .line-draw{ stroke-dasharray: 500; stroke-dashoffset:500; animation: draw 1.4s ease forwards .25s; }
+  @keyframes draw{ to{ stroke-dashoffset:0; } }
+  .count-fade{ animation: fadeUp .6s ease both; }
+  .count-fade.d1{ animation-delay:.05s; }
+  .count-fade.d2{ animation-delay:.15s; }
+  .count-fade.d3{ animation-delay:.25s; }
+  .count-fade.d4{ animation-delay:.35s; }
+  @keyframes fadeUp{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:translateY(0);} }
+
+  @media (prefers-reduced-motion: reduce){
+    .bar-rise, .line-draw, .count-fade{ animation:none !important; }
+  }
+
+  details > summary{ list-style:none; cursor:pointer; }
+  details > summary::-webkit-details-marker{ display:none; }
+  details[open] .chev{ transform:rotate(45deg); }
+  .chev{ transition: transform .2s ease; }
+
+  .legend-dot{ width:14px; height:14px; border-radius:2px; flex:none; }
+
+  .sticky-cta{
+    position:sticky; bottom:0; left:0; right:0;
+    backdrop-filter: blur(6px);
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    border-top:1px solid var(--line);
+  }
+  @supports not (backdrop-filter: blur(1px)){
+    .sticky-cta{ background:var(--paper); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<header class="wrap flex items-center justify-between py-5">
+  <div class="flex items-center gap-2">
+    <span class="serif text-[19px]" style="color:var(--ink)">Rental Tracker</span>
+    <span class="hidden sm:inline text-[13px]" style="color:var(--ink-soft)">for Airbnb &amp; VRBO hosts</span>
+  </div>
+  <div class="flex items-center gap-3">
+    <span class="hidden sm:inline text-[15px] figure" style="color:var(--ink-soft)">
+      <span data-gumroad-field="price">$10</span> · one-time
+    </span>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" type="button">
+      <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg id="iconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="display:none"><path d="M21 12.6A9 9 0 1 1 11.4 3a7 7 0 0 0 9.6 9.6Z"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- ===== HERO ===== -->
+<section class="wrap pt-6 pb-16 md:pt-10 md:pb-24">
+  <div class="grid md:grid-cols-2 gap-12 md:gap-16 items-center">
+    <div class="count-fade d1">
+      <p class="text-[13px] mb-4" style="color:var(--ink-soft)">Google Sheets &amp; Excel workbook</p>
+      <h1 class="serif text-[38px] sm:text-[46px] leading-[1.08] mb-5" style="color:var(--ink)">
+        Log a booking.<br>Watch the month total itself.
+      </h1>
+      <p class="text-[16px] leading-relaxed mb-7 max-w-[46ch]" style="color:var(--ink-soft)">
+        <span data-gumroad-field="name">Short-Term Rental Transaction Tracker</span> is a ready-built spreadsheet for hosts running one property or five. Type in a payout or an expense — occupancy, ADR, monthly profit and your estimated tax all update on their own.
+      </p>
+      <div class="flex flex-wrap items-center gap-4 mb-6">
+        <a href="https://digitalcrest91.gumroad.com/l/ddbig?wanted=true" data-gumroad-action="buy"
+           class="btn-buy inline-flex items-baseline gap-2 px-6 py-3 rounded-[3px] text-[16px]">
+          Get the tracker
+          <span class="figure text-[15px] opacity-90">— <span data-gumroad-field="price">$10</span></span>
+        </a>
+        <span class="text-[13px]" style="color:var(--ink-soft)">Pay once. Yours forever.</span>
+      </div>
+      <div class="flex items-center gap-2 text-[14px]" style="color:var(--ink-soft)">
+        <span aria-hidden="true">★★★★★</span>
+        <span data-gumroad-field="rating"></span>
+        <span data-gumroad-field="review-count">Be the first to review</span>
+      </div>
+    </div>
+
+    <!-- dashboard mock -->
+    <div class="count-fade d2 dash-card p-5 sm:p-6" role="img" aria-label="Preview of the KPI Dashboard tab, showing gross revenue $45,942.53, total expenses $4,131.82, net profit $41,810.71, and average occupancy 34%">
+      <div class="flex items-center justify-between mb-4">
+        <span class="text-[12px] tracking-wide" style="color:var(--ink-soft)">KPI Dashboard — sample year</span>
+        <span class="text-[11px] px-2 py-0.5 rounded-sm" style="background:var(--sage-pale); color:var(--sage-deep)">auto-calculated</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-px mb-4" style="background:var(--line-soft)">
+        <div class="dash-cell p-3" style="background:var(--paper-2)">
+          <p class="text-[11px] mb-1" style="color:var(--ink-soft)">Gross Revenue</p>
+          <p class="figure text-[20px] leading-none" style="color:var(--ink)">$45,942.53</p>
+        </div>
+        <div class="dash-cell p-3" style="background:var(--paper-2)">
+          <p class="text-[11px] mb-1" style="color:var(--ink-soft)">Total Expenses</p>
+          <p class="figure text-[20px] leading-none" style="color:var(--ink)">$4,131.82</p>
+        </div>
+        <div class="dash-cell p-3" style="background:var(--sage-pale)">
+          <p class="text-[11px] mb-1" style="color:var(--sage-deep)">Net Profit</p>
+          <p class="figure text-[20px] leading-none" style="color:var(--sage-deep)">$41,810.71</p>
+        </div>
+        <div class="dash-cell p-3" style="background:var(--paper-2)">
+          <p class="text-[11px] mb-1" style="color:var(--ink-soft)">Avg. Occupancy</p>
+          <p class="figure text-[20px] leading-none" style="color:var(--ink)">34.4%</p>
+        </div>
+      </div>
+
+      <!-- monthly profit line -->
+      <p class="text-[11px] mb-2" style="color:var(--ink-soft)">Net profit by month</p>
+      <svg viewBox="0 0 300 70" class="w-full h-[64px] mb-4" preserveAspectRatio="none">
+        <polyline class="line-draw" fill="none" stroke="var(--sage-deep)" stroke-width="2.2"
+          points="0,25 27,32 54,42 81,50 108,10 135,15 162,45 189,38 216,5 243,40 270,30 300,20"/>
+      </svg>
+
+      <!-- expense mix bars -->
+      <p class="text-[11px] mb-2" style="color:var(--ink-soft)">Expense mix</p>
+      <div class="flex items-end gap-2 h-[52px]">
+        <div class="bar-rise flex-1 rounded-t-[2px]" style="height:46%; background:var(--sand-deep)" title="Cleaning Services"></div>
+        <div class="bar-rise flex-1 rounded-t-[2px]" style="height:24%; background:var(--sand-deep); animation-delay:.06s" title="Utilities"></div>
+        <div class="bar-rise flex-1 rounded-t-[2px]" style="height:14%; background:var(--sand-deep); animation-delay:.12s" title="Platform Fees"></div>
+        <div class="bar-rise flex-1 rounded-t-[2px]" style="height:8%; background:var(--sand-deep); animation-delay:.18s" title="Supplies"></div>
+        <div class="bar-rise flex-1 rounded-t-[2px]" style="height:100%; background:var(--sage-deep); animation-delay:.24s" title="Net profit"></div>
+      </div>
+      <div class="flex justify-between text-[10px] mt-1" style="color:var(--ink-soft)">
+        <span>Clean</span><span>Utils</span><span>Fees</span><span>Supplies</span><span>Profit</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TABS STRIP ===== -->
+<section class="border-t border-b hairline" style="background:var(--charcoal)">
+  <div class="wrap py-10">
+    <p class="text-[13px] mb-6" style="color:#B9C0BA">Six tabs. Every number after the first one is a formula.</p>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-10">
+      <div class="ledger-row py-4 hairline" style="border-color:rgba(237,234,224,0.14)">
+        <p class="serif text-[16px]" style="color:#EDEAE0">Start Here</p>
+        <p class="text-[13.5px] mt-1" style="color:#9AA29C">Setup steps, the color legend, how the automation fits together.</p>
+      </div>
+      <div class="ledger-row py-4 hairline" style="border-color:rgba(237,234,224,0.14)">
+        <p class="serif text-[16px]" style="color:#EDEAE0">Property Register</p>
+        <p class="text-[13.5px] mt-1" style="color:#9AA29C">Your properties, nightly rates, and the lists your dropdowns pull from.</p>
+      </div>
+      <div class="ledger-row py-4 hairline" style="border-color:rgba(237,234,224,0.14)">
+        <p class="serif text-[16px]" style="color:#EDEAE0">Transaction Log</p>
+        <p class="text-[13.5px] mt-1" style="color:#9AA29C">Log every booking payout and expense with guided dropdowns.</p>
+      </div>
+      <div class="ledger-row py-4 hairline" style="border-color:rgba(237,234,224,0.14)">
+        <p class="serif text-[16px]" style="color:#EDEAE0">Monthly Breakdown</p>
+        <p class="text-[13.5px] mt-1" style="color:#9AA29C">Income, expenses, and profit, totalled by month automatically.</p>
+      </div>
+      <div class="ledger-row py-4 hairline" style="border-color:rgba(237,234,224,0.14)">
+        <p class="serif text-[16px]" style="color:#EDEAE0">Property Comparison</p>
+        <p class="text-[13.5px] mt-1" style="color:#9AA29C">Profitability, occupancy, and rate, side by side per property.</p>
+      </div>
+      <div class="ledger-row py-4 hairline" style="border-color:rgba(237,234,224,0.14)">
+        <p class="serif text-[16px]" style="color:#EDEAE0">KPI Dashboard</p>
+        <p class="text-[13.5px] mt-1" style="color:#9AA29C">Revenue, profit, tax estimate, occupancy, ADR, and three live charts.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FEATURES ===== -->
+<section class="wrap py-16 md:py-24">
+  <h2 class="serif text-[28px] sm:text-[32px] mb-12 max-w-[20ch]" style="color:var(--ink)">What actually changes once you're using it</h2>
+
+  <div class="grid md:grid-cols-2 gap-x-16">
+    <div>
+      <div class="ledger-row py-6 hairline">
+        <p class="text-[15px] font-medium mb-1.5" style="color:var(--ink)">Dropdowns instead of free text</p>
+        <p class="text-[14.5px] leading-relaxed" style="color:var(--ink-soft)">Property, type, category and platform are all picked from a list, so nothing gets logged inconsistently and every report stays reliable.</p>
+      </div>
+      <div class="ledger-row py-6 hairline">
+        <p class="text-[15px] font-medium mb-1.5" style="color:var(--ink)">Zero manual totals</p>
+        <p class="text-[14.5px] leading-relaxed" style="color:var(--ink-soft)">Monthly income, expenses and profit are calculated live the moment you log a row — nothing to add up yourself.</p>
+      </div>
+      <div class="ledger-row py-6 hairline">
+        <p class="text-[15px] font-medium mb-1.5" style="color:var(--ink)">A tax rate you set yourself</p>
+        <p class="text-[14.5px] leading-relaxed" style="color:var(--ink-soft)">Edit one cell on the dashboard to match your bracket and the estimated tax figure updates instantly. A planning number, not tax advice.</p>
+      </div>
+    </div>
+    <div>
+      <div class="ledger-row py-6 hairline">
+        <p class="text-[15px] font-medium mb-1.5" style="color:var(--ink)">See which property is actually earning</p>
+        <p class="text-[14.5px] leading-relaxed" style="color:var(--ink-soft)">The Property Comparison tab puts profit, occupancy and rate for every listing next to each other, so the answer isn't a guess.</p>
+      </div>
+      <div class="ledger-row py-6 hairline">
+        <p class="text-[15px] font-medium mb-1.5" style="color:var(--ink)">Occupancy and ADR, tracked properly</p>
+        <p class="text-[14.5px] leading-relaxed" style="color:var(--ink-soft)">Log nights booked on an income row and your occupancy rate and average daily rate stay current on their own.</p>
+      </div>
+      <div class="ledger-row py-6 hairline">
+        <p class="text-[15px] font-medium mb-1.5" style="color:var(--ink)">Works in Sheets or Excel</p>
+        <p class="text-[14.5px] leading-relaxed" style="color:var(--ink-soft)">Built in Google Sheets, and downloads cleanly to Excel — formulas, dropdowns and charts all carry over.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== COLOR LEGEND ===== -->
+<section class="py-14" style="background:var(--paper-2); border-top:1px solid var(--line); border-bottom:1px solid var(--line)">
+  <div class="wrap">
+    <p class="text-[13px] mb-6" style="color:var(--ink-soft)">You always know what to touch, because the cells tell you</p>
+    <div class="grid sm:grid-cols-3 gap-6">
+      <div class="flex items-start gap-3">
+        <span class="legend-dot mt-1" style="background:var(--sand)"></span>
+        <div>
+          <p class="text-[14.5px] font-medium" style="color:var(--ink)">Sand</p>
+          <p class="text-[13.5px]" style="color:var(--ink-soft)">Cells you type into — inputs and assumptions.</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-3">
+        <span class="legend-dot mt-1" style="background:var(--paper-2); border:1px solid var(--line)"></span>
+        <div>
+          <p class="text-[14.5px] font-medium" style="color:var(--ink)">White</p>
+          <p class="text-[13.5px]" style="color:var(--ink-soft)">Formulas. Leave these alone and the sheet keeps calculating.</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-3">
+        <span class="legend-dot mt-1" style="background:var(--sage-pale); border:1px solid var(--sage)"></span>
+        <div>
+          <p class="text-[14.5px] font-medium" style="color:var(--ink)">Sage</p>
+          <p class="text-[13.5px]" style="color:var(--ink-soft)">Totals and summary rows — the answer, not the input.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FAQ ===== -->
+<section class="wrap py-16 md:py-24">
+  <h2 class="serif text-[28px] sm:text-[32px] mb-10" style="color:var(--ink)">Questions hosts actually ask</h2>
+
+  <div class="max-w-[70ch]">
+    <details class="ledger-row hairline py-5" open>
+      <summary class="flex items-center justify-between gap-4">
+        <span class="text-[15.5px] font-medium" style="color:var(--ink)">Does this work in Excel, or only Google Sheets?</span>
+        <span class="chev text-[18px] leading-none" style="color:var(--ink-soft)">+</span>
+      </summary>
+      <p class="text-[14.5px] leading-relaxed mt-3 max-w-[58ch]" style="color:var(--ink-soft)">Both. Make your copy in Google Sheets first, then go to File → Download → Microsoft Excel (.xlsx) whenever you want it. Formulas, dropdowns and charts all carry over.</p>
+    </details>
+    <details class="ledger-row hairline py-5">
+      <summary class="flex items-center justify-between gap-4">
+        <span class="text-[15.5px] font-medium" style="color:var(--ink)">I added a new expense category — why isn't it showing up on the dashboard?</span>
+        <span class="chev text-[18px] leading-none" style="color:var(--ink-soft)">+</span>
+      </summary>
+      <p class="text-[14.5px] leading-relaxed mt-3 max-w-[58ch]" style="color:var(--ink-soft)">The dropdown list and the calculation formulas are two separate things. Adding a name to Property Register makes it selectable, but Monthly Breakdown needs its own formula row too — copy the last category row down one row and you're set. Walked through in the guide, and the seller can help if it's not clicking.</p>
+    </details>
+    <details class="ledger-row hairline py-5">
+      <summary class="flex items-center justify-between gap-4">
+        <span class="text-[15.5px] font-medium" style="color:var(--ink)">Is the estimated tax figure something I can rely on?</span>
+        <span class="chev text-[18px] leading-none" style="color:var(--ink-soft)">+</span>
+      </summary>
+      <p class="text-[14.5px] leading-relaxed mt-3 max-w-[58ch]" style="color:var(--ink-soft)">Treat it as a planning number, not tax advice. It applies the flat rate you enter to your profit — short-term rental tax rules vary a lot by state and country, so confirm your real obligation with an accountant.</p>
+    </details>
+    <details class="ledger-row hairline py-5">
+      <summary class="flex items-center justify-between gap-4">
+        <span class="text-[15.5px] font-medium" style="color:var(--ink)">Will editing my copy change the original template?</span>
+        <span class="chev text-[18px] leading-none" style="color:var(--ink-soft)">+</span>
+      </summary>
+      <p class="text-[14.5px] leading-relaxed mt-3 max-w-[58ch]" style="color:var(--ink-soft)">No. The moment you make your own copy, it's a completely independent file in your own Drive — edit it however you like.</p>
+    </details>
+    <details class="ledger-row hairline py-5">
+      <summary class="flex items-center justify-between gap-4">
+        <span class="text-[15.5px] font-medium" style="color:var(--ink)">How many properties can I track?</span>
+        <span class="chev text-[18px] leading-none" style="color:var(--ink-soft)">+</span>
+      </summary>
+      <p class="text-[14.5px] leading-relaxed mt-3 max-w-[58ch]" style="color:var(--ink-soft)">More than the two sample rows shown. Add rows below the existing ones on Property Register — the dropdowns and formulas are already built to pick them up.</p>
+    </details>
+  </div>
+</section>
+
+<!-- ===== FINAL CTA ===== -->
+<section id="buy" class="py-20" style="background:var(--charcoal)">
+  <div class="wrap text-center">
+    <p class="text-[13px] mb-3" style="color:#9AA29C">One payment. No subscription.</p>
+    <h2 class="serif text-[28px] sm:text-[34px] mb-3" style="color:#EDEAE0">Start logging tonight's payout in under five minutes</h2>
+    <p class="text-[15px] mb-8 max-w-[48ch] mx-auto" style="color:#9AA29C">Comes with a year of sample data already in place, so you can see exactly how it behaves before you clear it out and add your own.</p>
+    <a href="https://digitalcrest91.gumroad.com/l/ddbig?wanted=true" data-gumroad-action="buy"
+       class="btn-buy inline-flex items-baseline gap-2 px-8 py-3.5 rounded-[3px] text-[17px]">
+      Get the tracker
+      <span class="figure text-[16px] opacity-90">— <span data-gumroad-field="price">$10</span></span>
+    </a>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="wrap py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+  <p class="text-[13px]" style="color:var(--ink-soft)">© <span data-gumroad-field="name">Short-Term Rental Transaction Tracker</span></p>
+  <p class="text-[13px]" style="color:var(--ink-soft)">Questions before you buy? Message the seller directly.</p>
+</footer>
+
+<!-- mobile sticky buy bar -->
+<div class="sticky-cta sm:hidden">
+  <div class="wrap py-3 flex items-center justify-between">
+    <span class="figure text-[15px]" style="color:var(--ink)"><span data-gumroad-field="price">$10</span></span>
+    <a href="https://digitalcrest91.gumroad.com/l/ddbig?wanted=true" data-gumroad-action="buy" class="btn-buy px-5 py-2 rounded-[3px] text-[14.5px]">Get the tracker</a>
+  </div>
+</div>
+
+<script>
+  (function(){
+    var root = document.documentElement;
+    var toggle = document.getElementById('themeToggle');
+    var sun = document.getElementById('iconSun');
+    var moon = document.getElementById('iconMoon');
+    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var current = prefersDark ? 'dark' : 'light';
+
+    function apply(mode){
+      current = mode;
+      root.setAttribute('data-theme', mode);
+      sun.style.display = mode === 'dark' ? 'none' : 'block';
+      moon.style.display = mode === 'dark' ? 'block' : 'none';
+    }
+    apply(current);
+
+    toggle.addEventListener('click', function(){
+      apply(current === 'dark' ? 'light' : 'dark');
+    });
+  })();
+</script>
+
+</body>
+</html>
